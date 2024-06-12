@@ -9,7 +9,6 @@ URL = "https://www.antena3.com/programas/karlos-arguinano/recetas/arroces/exito-
 @dataclass
 class Receta:
     titulo: str
-    autor: str
     categoria: str
     ingredientes: str
     elaboracion: str
@@ -43,7 +42,6 @@ def lambda_handler(event, context):
 
         receta = Receta(
             titulo=titulo.group(1).strip(),
-            autor="Karlos Arguiñano",
             categoria=event.get("category"),
             ingredientes=[ i.text for i in ingredientes],
             elaboracion="\n".join([ p.text for p in p_tags])

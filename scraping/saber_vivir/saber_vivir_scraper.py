@@ -20,19 +20,19 @@ def lambda_handler(event, context):
 
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        titulo = soup.find(class_="m-titulo")
-        ingredientes = soup.find(class_="ingredientes")
-        section_tag = soup.find(class_="zona-ficha")
-        p_tags = section_tag.find_all('p')
+        titulo = soup.find("h1", class_="itemTitle").text
+        categoria = soup.find(class_="itemCategory").text
+        ingredientes = soup.find("h2", string="Ingredientes:").find_next_sibling("ul").find_all("li")
+        elaboracion = soup.find("h2", string="Preparación:").find_next_sibling("ol").find_all("li")
 
         receta = Receta(
-            titulo=titulo.text,
-            categoria=event.get("categor"), 
-            ingredientes=[i.text for i in ingredientes] if ingredientes else None,
-            elaboracion="\n".join([p.text for p in p_tags])
+            titulo=titulo.strip(),
+            categoria=categoria.strip(),
+            ingredientes=[ i.text for i in ingredientes],
+            elaboracion="\n".join([ p.text for p in elaboracion])
         )
-        recetas.append(receta)
-        print(recetas)
+        print(receta)
+        recetas.append()
     #TODO store the data in a csv in bucket
     return {
         "recetas": recetas
