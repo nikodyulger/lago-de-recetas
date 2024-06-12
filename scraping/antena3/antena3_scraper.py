@@ -54,8 +54,3 @@ def lambda_handler(event, context):
     return {
         "recetas": recetas
     }
-
-print(lambda_handler({
-    "links": ['https://www.antena3.com/programas/karlos-arguinano/recetas/entrantes/batido-nutritivo-arguinano-perfecto-cenar-platano-manzana-espinacas_2024021965d3403e344c980001adde43.html', 'https://www.antena3.com/programas/karlos-arguinano/recetas/entrantes/bolitas-pollo-queso_2024022065d4718b344c980001b02f72.html'],
-    "category": "entrantes"
-}, None))

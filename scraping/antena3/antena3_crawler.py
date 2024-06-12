@@ -1,6 +1,5 @@
 import requests
 
-from dataclasses import dataclass
 from bs4 import BeautifulSoup
 
 
@@ -21,13 +20,8 @@ def lambda_handler(event, context):
     links = [a.find("a").get("href") for a in articles]
 
     print(f"Found {len(links)} links")
-    print(links)
+
     return {
         "links": links,
         "category": category
     }
-
-lambda_handler({
-    "category": "entrantes",
-    "page": 2
-}, None)
