@@ -4,8 +4,6 @@ import requests
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 
-URL = "https://www.antena3.com/programas/karlos-arguinano/recetas/arroces/exito-garantizado-cuatro-ingredientes-risotto-guisantes-queso-cabra-huevo_202403256601719d17c56e0001d2a19d.html"
-
 @dataclass
 class Receta:
     titulo: str
