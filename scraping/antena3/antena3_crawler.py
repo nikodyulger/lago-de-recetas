@@ -1,24 +1,26 @@
 import requests
+import json
 
 from bs4 import BeautifulSoup
 
-
-BASE_URL = "https://www.antena3.com/programas/karlos-arguinano/recetas/{category}/"
 PAGE_URL = "https://www.antena3.com/programas/karlos-arguinano/recetas/{category}-{page}/"
 
 def lambda_handler(event, context):
 
     category = event.get("category")
-    page = event.get("page")
-    url = PAGE_URL.format(category=category, page=page) if page else BASE_URL.format(category=category)
-    response = requests.get(url)
-    print(f"GET - {response.status_code} - {url}")
+    pages = event.get("pages")
+    links = []
+    for page in pages:
+        url = PAGE_URL.format(category=category, page=page)
+        response = requests.get(url)
+        print(f"GET - {response.status_code} - {url}")
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    articles = soup.find_all("h2", class_="article__title")
-    links = [a.find("a").get("href") for a in articles]
+        articles = soup.find_all("h2", class_="article__title")
+        links += [a.find("a").get("href") for a in articles]
 
+    print(json.dumps(links, indent=4))    
     print(f"Found {len(links)} links")
 
     return {

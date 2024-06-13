@@ -27,12 +27,13 @@ def lambda_handler(event, context):
 
         receta = Receta(
             titulo=titulo.text,
-            categoria=event.get("categor"), 
+            categoria=event.get("category"), 
             ingredientes=[i.text for i in ingredientes] if ingredientes else None,
             elaboracion="\n".join([p.text for p in p_tags])
         )
         recetas.append(receta)
-        print(recetas)
+        
+    print(recetas)
     #TODO store the data in a csv in bucket
     return {
         "recetas": recetas
