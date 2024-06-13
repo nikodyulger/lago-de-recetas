@@ -8,22 +8,21 @@ WEBSITE_URL = "https://www.sabervivir.es/"
 
 def lambda_handler(event, context):
 
-    page = event.get("page")
-    url = BASE_URL.format(page=page)
-    response = requests.get(url)
-    print(f"GET - {response.status_code} - {url}")
+    pages = event.get("pages")
+    links = []
+    for page in pages:
+        url = BASE_URL.format(page=page)
+        response = requests.get(url)
+        print(f"GET - {response.status_code} - {url}")
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    articles = soup.find_all("h3", class_="catItemTitle")
-    links = [WEBSITE_URL + a.find("a").get("href") for a in articles]
+        articles = soup.find_all("h3", class_="catItemTitle")
+        links += [WEBSITE_URL + a.find("a").get("href") for a in articles]
 
     print(f"Found {len(links)} links")
     print(links)
+
     return {
         "links": links
     }
-
-lambda_handler({
-    "page": 0
-}, None)
