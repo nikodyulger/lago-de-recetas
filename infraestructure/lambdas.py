@@ -3,8 +3,7 @@ import json
 import pulumi
 import pulumi_aws as aws
 
-from itertools import chain
-
+SCRAPING_DIRECTORY = "../scraping"  # TODO add it to the config yaml
 lambda_role = aws.iam.Role(
     "lambda_role",
     assume_role_policy=json.dumps(
@@ -61,16 +60,18 @@ lambda_role_policy = aws.iam.RolePolicy(
 )
 
 lambdas = {}
-scripts = [
-    os.path.splitext(f)[0] for f in os.listdir("../scraping") if f.endswith(".py")
-]
-for s in scripts:
-    file_path = f"../scraping/{s}.py"
-    lambdas[s] = aws.lambda_.Function(
-        s,
-        name=s,
-        role=lambda_role.arn,
-        runtime=aws.lambda_.Runtime.PYTHON3D12,
-        code=pulumi.FileArchive("../scraping"),
-        handler=f"{s}.lambda_handler",
-    )
+subdirectories = filter(
+    os.path.isdir,
+    [os.path.join(SCRAPING_DIRECTORY, f) for f in os.listdir(SCRAPING_DIRECTORY)],
+)
+for subdir in subdirectories:
+    scripts = [os.path.splitext(f)[0] for f in os.listdir(subdir) if f.endswith(".py")]
+    for script in scripts:
+        lambdas[script] = aws.lambda_.Function(
+            script,
+            name=script,
+            role=lambda_role.arn,
+            runtime=aws.lambda_.Runtime.PYTHON3D12,
+            code=pulumi.FileArchive(subdir),
+            handler=f"{script}.lambda_handler",
+        )
