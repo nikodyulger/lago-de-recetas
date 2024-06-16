@@ -1,0 +1,11 @@
+name: lago-de-recetas
+runtime:
+  name: python
+  options:
+    virtualenv: ../.venv
+description: ETL para recetas de cocina
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
+      
