@@ -1,13 +1,14 @@
 import os
 import json
 import pulumi_aws as aws
-from pulumi import Output
+import pulumi
 
 from lambdas import lambdas
+from utils import websites
 
-SCRAPING_DIRECTORY = "../scraping"
 sfn_role = aws.iam.Role(
     "sfn_role",
+    name="sfn_role",
     assume_role_policy=json.dumps(
         {
             "Version": "2012-10-17",
@@ -40,18 +41,11 @@ sfn_role_policy = aws.iam.RolePolicy(
         }
     ),
 )
-subdirectories = filter(
-    os.path.isdir,
-    [
-        os.path.join(SCRAPING_DIRECTORY, f)
-        for f in os.listdir(SCRAPING_DIRECTORY)
-        if f != "common"
-    ],
-)
+
 step_functions = {}
 
-for subdir in subdirectories:
-    base_name = os.path.basename(subdir)
+for web in websites:
+    base_name = os.path.basename(web)
     init_lambda_arn = (
         lambdas[f"{base_name}_init"].arn
         if f"{base_name}_init" in lambdas.keys()
@@ -59,11 +53,13 @@ for subdir in subdirectories:
     )
     crawler_lambda_arn = lambdas[f"{base_name}_crawler"].arn
     scraper_lambda_arn = lambdas[f"{base_name}_scraper"].arn
+
+    sfn_name = f"scraper_{base_name}"
     step_functions[base_name] = aws.sfn.StateMachine(
-        base_name,
-        name=base_name,
+        sfn_name,
+        name=sfn_name,
         role_arn=sfn_role.arn,
-        definition=Output.all(
+        definition=pulumi.Output.all(
             init_lambda_arn=init_lambda_arn,
             crawler_lambda_arn=crawler_lambda_arn,
             scraper_lambda_arn=scraper_lambda_arn,

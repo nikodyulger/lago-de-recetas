@@ -3,9 +3,14 @@ import json
 import pulumi
 import pulumi_aws as aws
 
-SCRAPING_DIRECTORY = "../scraping"  # TODO add it to the config yaml
+from utils import scripts_subdirectories, websites
+
+AWS_ACCOUNT_ID = aws.get_caller_identity().account_id
+AWS_REGION = aws.get_region()
+
 lambda_role = aws.iam.Role(
     "lambda_role",
+    name="lambda_role",
     assume_role_policy=json.dumps(
         {
             "Version": "2012-10-17",
@@ -32,27 +37,31 @@ policy_statements = {
             ],
             "Resource": "arn:aws:logs:*:*:*",
         },
-        # {
-        #     "Effect": "Allow",
-        #     "Action": [
-        #         "ssm:GetParameters",
-        #         "ssm:GetParameter",
-        #         "ssm:GetParametersByPath",
-        #         "ssm:PutParameter",
-        #         "ssm:DeleteParameters"
-        #     ],
-        #     # "Resource": "arn:aws:ssm:us-east-2:123456789012:parameter/dbserver-prod-*"
-        # },
-        # {
-        #     "Effect": "Allow",
-        #     "Action": [
-        #         "events:DescribeRule",
-        #         "events:DisableRule",
-        #         "events:EnableRule",
-        #         "events:ListRules"
-        #     ],
-        #     # "Resource": "arn:aws:ssm:us-east-2:123456789012:parameter/dbserver-prod-*"
-        # },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:GetParameters",
+                "ssm:GetParameter",
+                "ssm:GetParametersByPath",
+                "ssm:PutParameter",
+                "ssm:DeleteParameters",
+            ],
+            "Resource": [
+                f"arn:aws:ssm:{AWS_REGION}:{AWS_ACCOUNT_ID}:parameter/config/init_data_*"
+            ],
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "events:DescribeRule",
+                "events:DisableRule",
+                "events:EnableRule",
+                "events:ListRules",
+            ],
+            "Resource": [
+                f"arn:aws:events:{AWS_REGION}:{AWS_ACCOUNT_ID}:rule/schedule_rule_*"
+            ],
+        },
     ],
 }
 lambda_role_policy = aws.iam.RolePolicy(
@@ -60,11 +69,7 @@ lambda_role_policy = aws.iam.RolePolicy(
 )
 
 lambdas = {}
-subdirectories = filter(
-    os.path.isdir,
-    [os.path.join(SCRAPING_DIRECTORY, f) for f in os.listdir(SCRAPING_DIRECTORY)],
-)
-for subdir in subdirectories:
+for subdir in scripts_subdirectories:
     scripts = [os.path.splitext(f)[0] for f in os.listdir(subdir) if f.endswith(".py")]
     for script in scripts:
         lambdas[script] = aws.lambda_.Function(
@@ -72,6 +77,8 @@ for subdir in subdirectories:
             name=script,
             role=lambda_role.arn,
             runtime=aws.lambda_.Runtime.PYTHON3D12,
+            timeout=900,
+            memory_size=1024,
             code=pulumi.FileArchive(subdir),
             handler=f"{script}.lambda_handler",
         )
