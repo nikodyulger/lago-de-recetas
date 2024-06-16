@@ -6,8 +6,5 @@ import step_functions
 import schedulers
 import params
 
-bucket = aws.s3.Bucket("raw_recipe_data_bucket", bucket="raw-recipe-data-bucket")
-
-
-# Export the name of the bucket
-pulumi.export("bucket_name", bucket.id)
+raw_bucket = aws.s3.Bucket("raw_recipe_data_bucket", bucket="raw-recipe-data-bucket")
+pulumi.export("raw_bucket_name", raw_bucket.id)

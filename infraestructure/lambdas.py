@@ -51,9 +51,17 @@ policy_statements = {
             ],
             "Resource": f"arn:aws:ssm:{AWS_REGION}:{AWS_ACCOUNT_ID}:parameter/config/init_data_*",
         },
+        {
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+            "Resource": [
+                "arn:aws:s3:::raw-recipe-data-bucket",
+                "arn:aws:s3:::raw-recipe-data-bucket/*",
+            ],
+        },
     ],
 }
-print(json.dumps(policy_statements))
+
 lambda_role_policy = aws.iam.RolePolicy(
     "lambda_role_policy", role=lambda_role.id, policy=json.dumps(policy_statements)
 )
