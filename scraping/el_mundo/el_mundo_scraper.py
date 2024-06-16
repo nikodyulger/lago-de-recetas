@@ -25,48 +25,45 @@ def lambda_handler(event, context):
     recetas = []
     for link in links:
 
-        response = requests.get(link)
-        print(f"GET - {response.status_code} - {link}")
+        try:
+            response = requests.get(link)
+            print(f"GET - {response.status_code} - {link}")
+            response.raise_for_status()
 
-        soup = BeautifulSoup(response.content, "html.parser")
+        except requests.exceptions.HTTPError:
+            continue
 
-        titulo = soup.find("h1", class_="entry-title").text
-        ingredientes = (
-            soup.find(
-                "h2", class_="wp-block-heading", string=re.compile("Ingredientes")
+        try:
+            soup = BeautifulSoup(response.content, "html.parser")
+            titulo = soup.find("h1", class_="entry-title").text
+            ingredientes = (
+                soup.find(
+                    "h2", class_="wp-block-heading", string=re.compile("Ingredientes")
+                )
+                .find_next_sibling("ul")
+                .find_all("li")
             )
-            .find_next_sibling("ul")
-            .find_all("li")
-        )
-        elaboracion = soup.find(
-            "h2", class_="wp-block-heading", string=re.compile("Cómo hacer")
-        ).find_next_siblings("p")
+            elaboracion = soup.find(
+                "h2", class_="wp-block-heading", string=re.compile("Cómo hacer")
+            ).find_next_siblings("p")
 
-        receta = Receta(
-            titulo=titulo,
-            categoria=event.get("category"),
-            ingredientes=[i.text for i in ingredientes],
-            elaboracion="\n".join([p.text for p in elaboracion]),
-            link=link,
-        )
+            receta = Receta(
+                titulo=titulo,
+                categoria=event.get("category"),
+                ingredientes=[i.text for i in ingredientes],
+                elaboracion="\n".join([p.text for p in elaboracion]),
+                link=link,
+            )
 
-        print(receta)
+            print(receta)
+        except (AttributeError, ValueError, TypeError):
+            continue
+
         recetas.append(asdict(receta))
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     df = pd.DataFrame(recetas)
+    print(f"STORE DATAFRAME - {BUCKET_PATH.format(timestamp=timestamp)}")
     wr.s3.to_parquet(df=df, path=BUCKET_PATH.format(timestamp=timestamp), index=False)
 
     return {"recetas": recetas}
-
-
-lambda_handler(
-    {
-        "category": "postres",
-        "links": [
-            "https://recetasdecocina.elmundo.es/2023/12/naranjas-confitadas-receta-facil-casera-navidad.html",
-            "https://recetasdecocina.elmundo.es/2023/12/mantecados-receta-facil-casera.html",
-        ],
-    },
-    None,
-)

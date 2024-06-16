@@ -25,41 +25,50 @@ def lambda_handler(event, context):
     recetas = []
     for link in links:
 
-        response = requests.get(link)
-        print(f"GET - {response.status_code} - {link}")
+        try:
+            response = requests.get(link)
+            print(f"GET - {response.status_code} - {link}")
+            response.raise_for_status()
 
-        soup = BeautifulSoup(response.content, "html.parser")
+        except requests.exceptions.HTTPError:
+            continue
 
-        fig_captions = soup.find_all("figcaption")
-        titulo_figura = next(
-            filter(lambda fg: "Ingredientes" in fg.text, fig_captions)
-        ).text
+        try:
+            soup = BeautifulSoup(response.content, "html.parser")
+            fig_captions = soup.find_all("figcaption")
+            titulo_figura = next(
+                filter(lambda fg: "Ingredientes" in fg.text, fig_captions)
+            ).text
 
-        pattern = r"Ingredientes(.*?)\|"
-        titulo = re.search(pattern, titulo_figura)
+            pattern = r"Ingredientes(.*?)\|"
+            titulo = re.search(pattern, titulo_figura)
 
-        intext = soup.find(id="intext")
-        headers = intext.find_all("h2")
+            intext = soup.find(id="intext")
+            headers = intext.find_all("h2")
 
-        for h in headers:
-            if "Ingredientes" in h.text:
-                ingredientes = h.next_sibling
+            for h in headers:
+                if "Ingredientes" in h.text:
+                    ingredientes = h.next_sibling
 
-            if "Elaboración" in h.text:
-                p_tags = h.find_next_siblings("p")
+                if "Elaboración" in h.text:
+                    p_tags = h.find_next_siblings("p")
 
-        receta = Receta(
-            titulo=titulo.group(1).strip(),
-            categoria=event.get("category"),
-            ingredientes=[i.text for i in ingredientes],
-            elaboracion="\n".join([p.text for p in p_tags]),
-            link=link,
-        )
+            receta = Receta(
+                titulo=titulo.group(1).strip(),
+                categoria=event.get("category"),
+                ingredientes=[i.text for i in ingredientes] if ingredientes else None,
+                elaboracion="\n".join([p.text for p in p_tags]) if p_tags else None,
+                link=link,
+            )
+            print(receta)
+        except (AttributeError, ValueError, TypeError):
+            continue
 
-        print(receta)
         recetas.append(asdict(receta))
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     df = pd.DataFrame(recetas)
+    print(f"STORE DATAFRAME - {BUCKET_PATH.format(timestamp=timestamp)}")
     wr.s3.to_parquet(df=df, path=BUCKET_PATH.format(timestamp=timestamp), index=False)
+
     return {"recetas": recetas}
