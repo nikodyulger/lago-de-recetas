@@ -1,0 +1,20 @@
+# Pull docker image and login
+docker image pull amazonlinux
+docker image ls
+docker container run -it  amazonlinux /bin/bash
+
+# Inside docker install dependencies and zip
+yum install -y python3-pip
+yum install zip
+
+mkdir lambda_layers/python
+cd lambda_layers/python
+pip install bs4 requests -t .  # you can do with the requirements.txt
+
+cd ..
+zip -r my_lambda_layer.zip python
+
+# Retrieve the container_id by running 
+docker ps -a.
+# copy to local 
+docker cp <container-id>:lambda_layers/custom_lambda_layer.zip .

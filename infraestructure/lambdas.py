@@ -3,10 +3,13 @@ import json
 import pulumi
 import pulumi_aws as aws
 
-from utils import scripts_subdirectories, websites
+from utils import scripts_subdirectories
 
 AWS_ACCOUNT_ID = aws.get_caller_identity().account_id
-AWS_REGION = aws.get_region()
+AWS_REGION = aws.get_region().name
+
+config = pulumi.Config()
+pandas_layer_arn = config.require("pandasAWSLayerArn")
 
 lambda_role = aws.iam.Role(
     "lambda_role",
@@ -46,26 +49,20 @@ policy_statements = {
                 "ssm:PutParameter",
                 "ssm:DeleteParameters",
             ],
-            "Resource": [
-                f"arn:aws:ssm:{AWS_REGION}:{AWS_ACCOUNT_ID}:parameter/config/init_data_*"
-            ],
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "events:DescribeRule",
-                "events:DisableRule",
-                "events:EnableRule",
-                "events:ListRules",
-            ],
-            "Resource": [
-                f"arn:aws:events:{AWS_REGION}:{AWS_ACCOUNT_ID}:rule/schedule_rule_*"
-            ],
+            "Resource": f"arn:aws:ssm:{AWS_REGION}:{AWS_ACCOUNT_ID}:parameter/config/init_data_*",
         },
     ],
 }
+print(json.dumps(policy_statements))
 lambda_role_policy = aws.iam.RolePolicy(
     "lambda_role_policy", role=lambda_role.id, policy=json.dumps(policy_statements)
+)
+
+scraping_layer = aws.lambda_.LayerVersion(
+    "scraping_layer",
+    layer_name="scraping_layer",
+    code=pulumi.FileArchive("lambda_layer/requirements.zip"),
+    compatible_runtimes=["python3.12"],
 )
 
 lambdas = {}
@@ -79,6 +76,7 @@ for subdir in scripts_subdirectories:
             runtime=aws.lambda_.Runtime.PYTHON3D12,
             timeout=900,
             memory_size=1024,
+            layers=[scraping_layer.arn, pandas_layer_arn],
             code=pulumi.FileArchive(subdir),
             handler=f"{script}.lambda_handler",
         )

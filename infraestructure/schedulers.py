@@ -3,6 +3,8 @@ import json
 import pulumi
 import pulumi_aws as aws
 
+from datetime import datetime, timezone, timedelta
+
 from step_functions import step_functions
 from utils import websites
 
@@ -49,6 +51,8 @@ eb_rule_role_policy = aws.iam.RolePolicy(
 )
 
 event_rules = {}
+start_date = datetime.now(timezone.utc)
+end_date = datetime.now(timezone.utc) + timedelta(7)
 for web in websites:
     base_name = os.path.basename(web)
     event_rule_name = f"schedule_rule_{base_name}"
@@ -58,6 +62,8 @@ for web in websites:
         flexible_time_window=aws.scheduler.ScheduleFlexibleTimeWindowArgs(
             mode="OFF",
         ),
+        start_date=start_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        end_date=end_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
         schedule_expression="rate(15 minutes)",
         target=aws.scheduler.ScheduleTargetArgs(
             arn=step_functions[base_name].arn.apply(lambda arn: f"{arn}"),
