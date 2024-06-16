@@ -1,7 +1,13 @@
 import requests
+import pandas as pd
+import awswrangler as wr
 
-from dataclasses import dataclass
+from datetime import datetime
+from dataclasses import dataclass, asdict
 from bs4 import BeautifulSoup
+
+BUCKET_PATH = "s3://raw-recipe-data-bucket/hogar_mania/recetas_{timestamp}.parquet"
+
 
 @dataclass
 class Receta:
@@ -9,6 +15,8 @@ class Receta:
     categoria: str
     ingredientes: str
     elaboracion: str
+    link: str
+
 
 def lambda_handler(event, context):
 
@@ -18,23 +26,26 @@ def lambda_handler(event, context):
         response = requests.get(link)
         print(f"GET - {response.status_code} - {link}")
 
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = BeautifulSoup(response.content, "html.parser")
 
         titulo = soup.find(class_="m-titulo")
         ingredientes = soup.find(class_="ingredientes")
         section_tag = soup.find(class_="zona-ficha")
-        p_tags = section_tag.find_all('p')
+        p_tags = section_tag.find_all("p")
 
         receta = Receta(
             titulo=titulo.text,
-            categoria=event.get("category"), 
+            categoria=event.get("category"),
             ingredientes=[i.text for i in ingredientes] if ingredientes else None,
-            elaboracion="\n".join([p.text for p in p_tags])
+            elaboracion="\n".join([p.text for p in p_tags]),
+            link=link,
         )
-        recetas.append(receta)
-        
-    print(recetas)
-    #TODO store the data in a csv in bucket
-    return {
-        "recetas": recetas
-    }
+
+        print(receta)
+        recetas.append(asdict(receta))
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    df = pd.DataFrame(recetas)
+    wr.s3.to_parquet(df=df, path=BUCKET_PATH.format(timestamp=timestamp), index=False)
+
+    return {"recetas": recetas}
