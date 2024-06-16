@@ -1,4 +1,5 @@
 import requests
+import time
 import pandas as pd
 import awswrangler as wr
 
@@ -51,6 +52,7 @@ def lambda_handler(event, context):
             continue
 
         recetas.append(asdict(receta))
+        time.sleep(5)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     df = pd.DataFrame(recetas)

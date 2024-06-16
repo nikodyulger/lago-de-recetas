@@ -1,4 +1,5 @@
 import re
+import time
 import requests
 import pandas as pd
 import awswrangler as wr
@@ -61,10 +62,11 @@ def lambda_handler(event, context):
                 link=link,
             )
             print(receta)
-        except (AttributeError, ValueError, TypeError):
+        except (AttributeError, ValueError, TypeError, StopIteration):
             continue
 
         recetas.append(asdict(receta))
+        time.sleep(5)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     df = pd.DataFrame(recetas)
