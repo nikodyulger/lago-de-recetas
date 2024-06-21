@@ -1,4 +1,3 @@
-import re
 import time
 import requests
 import pandas as pd
@@ -36,33 +35,37 @@ def lambda_handler(event, context):
 
         try:
             soup = BeautifulSoup(response.content, "html.parser")
-            fig_captions = soup.find_all("figcaption")
-            titulo_figura = next(
-                filter(lambda fg: "Ingredientes" in fg.text, fig_captions)
-            ).text
-
-            pattern = r"Ingredientes(.*?)\|"
-            titulo = re.search(pattern, titulo_figura)
+            titulo = soup.find("h1", class_="article-main__title").get_text()
 
             intext = soup.find(id="intext")
-            headers = intext.find_all("h2")
 
-            for h in headers:
-                if "Ingredientes" in h.text:
-                    ingredientes = h.next_sibling
+            ingredientes = []
+            elaboracion = []
+            current_section = ""
+            for tag in intext:
+                if "ingredientes" in tag.get_text().lower():
+                    current_section = "ingredientes"
+                if "Elabor" in tag.get_text():
+                    current_section = "elaboracion"
 
-                if "Elaboración" in h.text:
-                    p_tags = h.find_next_siblings("p")
+                if current_section == "ingredientes":
+                    if tag.name == "ul":
+                        ingredientes += [ingr.get_text() for ingr in tag.find_all("li")]
+                    if tag.name == "p":
+                        ingredientes.append(tag.get_text())
+                elif current_section == "elaboracion":
+                    elaboracion.append(tag.get_text())
 
             receta = Receta(
-                titulo=titulo.group(1).strip(),
+                titulo=titulo,
                 categoria=event.get("category"),
-                ingredientes=[i.text for i in ingredientes] if ingredientes else None,
-                elaboracion="\n".join([p.text for p in p_tags]) if p_tags else None,
+                ingredientes=ingredientes[1:],
+                elaboracion="\n".join(elaboracion[1:]),
                 link=link,
             )
             print(receta)
-        except (AttributeError, ValueError, TypeError, StopIteration):
+        except (AttributeError, ValueError, TypeError, StopIteration) as e:
+            print(e)
             continue
 
         recetas.append(asdict(receta))
