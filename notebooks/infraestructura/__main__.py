@@ -27,4 +27,13 @@ sagemaker_execution_role = aws.iam.Role(
     managed_policy_arns=[aws.iam.ManagedPolicy.AMAZON_SAGE_MAKER_FULL_ACCESS],
 )
 
+notebooks_recetas = aws.sagemaker.NotebookInstance(
+    "notebooks_recetas",
+    name="notebooks-recetas",
+    role_arn=sagemaker_execution_role.arn,
+    instance_type="ml.t3.medium",
+)
+
 pulumi.export("bucket_name", bucket.id)
+pulumi.export("notebook_instance_name", notebooks_recetas.name)
+pulumi.export("notebook_instance_arn", notebooks_recetas.arn)
