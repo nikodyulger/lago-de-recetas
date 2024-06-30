@@ -23,6 +23,7 @@ assume_role_policy = aws.iam.get_policy_document(
 
 sagemaker_execution_role = aws.iam.Role(
     "sagemaker_execution_role",
+    name="sagemaker_execution_role",
     assume_role_policy=assume_role_policy.json,
     managed_policy_arns=[aws.iam.ManagedPolicy.AMAZON_SAGE_MAKER_FULL_ACCESS],
 )
