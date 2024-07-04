@@ -46,15 +46,38 @@ custom_model_image = aws.ecr.Repository(
 custom_model = aws.sagemaker.Model(
     "custom_model",
     name="custom-model",
-    execution_role_arn=sagemaker_execution_role.arn,  # Replace with your IAM role ARN
+    execution_role_arn=sagemaker_execution_role.arn,
     primary_container={
         "image": custom_model_image.repository_url.apply(lambda arn: f"{arn}:latest"),
-        "modelDataUrl": "s3://sagemaker-eu-west-1-033617006106/custom-sklearn-2024-07-03-20-52-44-819/output/model.tar.gz",
+        "modelDataUrl": bucket,  ## TODO change it with the object uri
     },
+)
+
+custom_model_endpoint_config = aws.sagemaker.EndpointConfiguration(
+    "custom_model_endpoint_config",
+    name="custom-model-endpoint-config",
+    production_variants=[
+        {
+            "variantName": "first",
+            "modelName": custom_model.name,
+            "serverlessConfig": {
+                "maxConcurrency": 3,
+                "memorySizeInMb": 1024,
+                "provisionedConcurrency": 1,
+            },
+        }
+    ],
+)
+
+endpoint = aws.sagemaker.Endpoint(
+    "custom_model_endpoint",
+    name="custom-model-endpoint",
+    endpoint_config_name=custom_model_endpoint_config.name,
 )
 
 pulumi.export("bucket_name", bucket.id)
 pulumi.export("notebook_instance_name", notebooks_recetas.name)
 pulumi.export("notebook_instance_arn", notebooks_recetas.arn)
 pulumi.export("custom_model_image_url", custom_model_image.repository_url)
-pulumi.export("custom_model_id", custom_model.id)
+pulumi.export("custom_model_name", custom_model.name)
+pulumi.export("endpoint_name", endpoint.name)
