@@ -49,7 +49,9 @@ custom_model = aws.sagemaker.Model(
     execution_role_arn=sagemaker_execution_role.arn,
     primary_container={
         "image": custom_model_image.repository_url.apply(lambda arn: f"{arn}:latest"),
-        "modelDataUrl": bucket,  ## TODO change it with the object uri
+        "modelDataUrl": pulumi.Output.concat(
+            "s3://", bucket.id, "/models/model.tar.gz"
+        ),
     },
 )
 
