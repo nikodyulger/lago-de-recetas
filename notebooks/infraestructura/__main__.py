@@ -35,6 +35,15 @@ notebooks_recetas = aws.sagemaker.NotebookInstance(
     instance_type="ml.t3.medium",
 )
 
+custom_model_image = aws.ecr.Repository(
+    "custom_model_image",
+    name="custom_model_image",
+    image_scanning_configuration={
+        "scanOnPush": True,
+    },
+)
+
 pulumi.export("bucket_name", bucket.id)
 pulumi.export("notebook_instance_name", notebooks_recetas.name)
 pulumi.export("notebook_instance_arn", notebooks_recetas.arn)
+pulumi.export("custom_model_image_url", custom_model_image.repository_url)
