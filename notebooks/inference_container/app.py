@@ -5,7 +5,7 @@ import flask
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from src.inference import load_model, predict
+from src.inference import load_model, load_label_encoder, predict
 
 
 app = Flask(__name__)
@@ -13,6 +13,7 @@ app = Flask(__name__)
 # Load the model by reading the `SM_MODEL_DIR` environment variable
 # which is passed to the container by SageMaker (usually /opt/ml/model).
 model = load_model(os.getenv("SM_MODEL_DIR"))
+label_encoder = load_label_encoder()
 
 # Since the web application runs behind a proxy (nginx), we need to
 # add this setting to our app.
@@ -24,7 +25,7 @@ def ping():
     """
     Healthcheck function.
     """
-    health = model is not None
+    health = model is not None and label_encoder is not None
     status = 200 if health else 404
     return flask.Response(response="\n", status=status, mimetype="application/json")
 
@@ -35,9 +36,7 @@ def invocations():
     Function which responds to the invocations requests.
     """
     body = flask.request.get_json()
-    print("BODY")
-    print(body)
-    result = predict(body, model)
+    result = predict(body, model, label_encoder)
     return flask.Response(
         response=json.dumps(result), status=200, mimetype="application/json"
     )

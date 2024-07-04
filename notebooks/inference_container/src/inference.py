@@ -11,7 +11,7 @@ def load_model(model_dir):
 
 
 def load_label_encoder():
-    return joblib.load("label_encoder.joblib")
+    return joblib.load("src/label_encoder.joblib")
 
 
 def get_top_3_predictions(probabilities, class_labels):
@@ -19,11 +19,10 @@ def get_top_3_predictions(probabilities, class_labels):
     return {class_labels[i]: probabilities[i] for i in top_3}
 
 
-def predict(body, model):
+def predict(body, model, label_encoder):
     """
     Generate predictions for the incoming request using the model.
     """
-    label_encoder = load_label_encoder()
     ingrs = body.get("ingredientes")
 
     class_pred = model.predict([ingrs])
