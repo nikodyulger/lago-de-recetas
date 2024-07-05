@@ -54,3 +54,26 @@ with st.form("query-receta"):
         "Escribe ingredientes👇", placeholder="Tomate pepino aceituna"
     )
     submit_button = st.form_submit_button("Buscar")
+
+if ingredients:
+    payload = {"ingredientes": ingredients}
+    prediction_results = predict(payload)
+    df_similar_recipes = find_similar_recipes(ingredients)
+
+    st.markdown(
+        f"Tú receta tiene pinta que sea un **{prediction_results.get('prediction').upper()}**"
+    )
+    top_predictions = prediction_results.get("top_predictions")
+    values = list(
+        zip(
+            [":first_place_medal:", ":second_place_medal:", ":third_place_medal:"],
+            top_predictions.items(),
+        )
+    )
+    for emoji, item in values:
+        st.progress(
+            round(item[1], 3), text=f"{item[0]} {emoji} -> {round(item[1]*100, 3)}%"
+        )
+
+    st.write("¡Quizás estas recetas te gusten 👀!")
+    st.dataframe(df_similar_recipes)
