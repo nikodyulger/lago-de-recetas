@@ -60,7 +60,7 @@ custom_model_endpoint_config = aws.sagemaker.EndpointConfiguration(
     name="custom-model-endpoint-config",
     production_variants=[
         {
-            "variantName": "first",
+            "variantName": "dev",
             "modelName": custom_model.name,
             "serverlessConfig": {
                 "maxConcurrency": 3,
