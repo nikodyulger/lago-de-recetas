@@ -3,15 +3,16 @@ import joblib
 import numpy as np
 
 
-def load_model(model_dir):
+def load_model_and_encoder(model_dir):
     """
     Load the model from the specified directory.
     """
-    return joblib.load(os.path.join(model_dir, "model.joblib"))
-
-
-def load_label_encoder():
-    return joblib.load("src/label_encoder.joblib")
+    model = joblib.load(os.path.join(model_dir, "model.joblib"))
+    label_encoder = joblib.load(os.path.join(model_dir, "label_encoder.joblib"))
+    return (
+        model,
+        label_encoder,
+    )
 
 
 def get_top_3_predictions(probabilities, class_labels):
