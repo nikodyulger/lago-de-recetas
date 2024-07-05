@@ -20,6 +20,14 @@ def load_data():
     return df
 
 
+@st.cache_resource
+def get_vectorizer():
+    df = load_data()
+    vectorizer = TfidfVectorizer()
+    doc_term_matrix = vectorizer.fit_transform(df["ingredientes_limpios"])
+    return vectorizer, doc_term_matrix
+
+
 def predict(payload):
     response = runtime.invoke_endpoint(
         EndpointName=MODEL_ENDPOINT,
@@ -28,3 +36,21 @@ def predict(payload):
     )
     results = json.loads(response.get("Body").next().decode())
     return results
+
+
+def find_similar_recipes(ingredients, top_n=3):
+    features = ["titulo_link", "link", "ingredientes", "elaboracion", "categoria"]
+    vectorizer, doc_term_matrix = get_vectorizer()
+    recipe_vec = vectorizer.transform([ingredients])
+    similarities = cosine_similarity(recipe_vec, doc_term_matrix).flatten()
+    indices = similarities.argsort()[-top_n:][::-1]
+    df = load_data()
+    return df.iloc[indices][features]
+
+
+st.title("Recetas 🍽️")
+with st.form("query-receta"):
+    ingredients = st.text_input(
+        "Escribe ingredientes👇", placeholder="Tomate pepino aceituna"
+    )
+    submit_button = st.form_submit_button("Buscar")
