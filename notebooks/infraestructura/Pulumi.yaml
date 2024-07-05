@@ -1,0 +1,10 @@
+name: notebooks-de-recetas
+runtime:
+  name: python
+  options:
+    virtualenv: ../../.venv
+description: Jupyter Notebooks para exploración y limpieza de datos y entrenamiento de modelos
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
