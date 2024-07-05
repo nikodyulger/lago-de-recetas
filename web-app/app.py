@@ -61,7 +61,7 @@ if ingredients:
     df_similar_recipes = find_similar_recipes(ingredients)
 
     st.markdown(
-        f"Tú receta tiene pinta que sea un **{prediction_results.get('prediction').upper()}**"
+        f"Tú receta tiene pinta que sea **{prediction_results.get('prediction').upper()}**"
     )
     top_predictions = prediction_results.get("top_predictions")
     values = list(
@@ -72,8 +72,10 @@ if ingredients:
     )
     for emoji, item in values:
         st.progress(
-            round(item[1], 3), text=f"{item[0]} {emoji} -> {round(item[1]*100, 3)}%"
+            round(item[1], 3), text=f"{item[0]} {emoji} \t {round(item[1]*100, 3)}%"
         )
 
+    st.write("")
     st.write("¡Quizás estas recetas te gusten 👀!")
-    st.dataframe(df_similar_recipes)
+    for column in df_similar_recipes.T.columns:
+        st.dataframe(df_similar_recipes.T[column], use_container_width=True)
