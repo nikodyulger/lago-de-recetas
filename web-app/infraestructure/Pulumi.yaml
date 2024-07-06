@@ -1,0 +1,10 @@
+name: web-app-recetas
+runtime:
+  name: python
+  options:
+    virtualenv: ../../.venv
+description: Web para recomendar recetas
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
