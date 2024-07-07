@@ -1,12 +1,10 @@
 
-FROM python:3.10-slim
+FROM python:3.12-slim
 
-COPY . /app
-
-WORKDIR /app
+COPY . .
 
 RUN pip install -r requirements.txt
 
-ENTRYPOINT ["streamlit", "run"]
+EXPOSE 8501
 
-CMD ["app.py"]
+ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501"]

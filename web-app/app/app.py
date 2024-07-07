@@ -1,4 +1,3 @@
-import os
 import boto3
 import json
 import awswrangler as wr
@@ -7,8 +6,10 @@ import streamlit as st
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-RECIPE_DATA_S3_URI = os.getenv("RECIPE_DATA_S3_URI")
-MODEL_ENDPOINT = os.getenv("MODEL_ENDPOINT")
+RECIPE_DATA_S3_URI = (
+    "s3://recipes-data-models-sagemaker-bucket/data/cleaned_recipes.csv"
+)
+MODEL_ENDPOINT = "custom-model-endpoint"
 FEATURES = [
     "titulo",
     "link",
@@ -17,10 +18,10 @@ FEATURES = [
     "categoria",
     "similar",
 ]
-print(RECIPE_DATA_S3_URI)
-print(MODEL_ENDPOINT)
 
 runtime = boto3.client(service_name="sagemaker-runtime")
+
+st.set_page_config(page_title="Sugerencias Sabrosas")
 
 
 @st.cache_data
@@ -65,10 +66,13 @@ def transpose_and_rename(df):
     return transposed_df
 
 
-st.title("Recetas 🍽️")
+st.title("Sugerencias Sabrosas :yum: :knife_fork_plate:")
 with st.form("query-receta"):
     ingredients = st.text_input(
-        "Escribe ingredientes👇", placeholder="Tomate pepino aceituna"
+        "Escribe ingredientes :point_down:",
+        placeholder="Azúcar mantequilla galleta",
+        max_chars=100,
+        help="Separados por espacios",
     )
     submit_button = st.form_submit_button("Buscar")
 
@@ -78,7 +82,7 @@ if ingredients:
     df_similar_recipes = find_similar_recipes(ingredients)
 
     st.markdown(
-        f"Tú receta tiene pinta que sea **{prediction_results.get('prediction').upper()}**"
+        f"Tú receta tiene pinta de **{prediction_results.get('prediction').upper()}**"
     )
     top_predictions = prediction_results.get("top_predictions")
     values = list(
@@ -94,6 +98,6 @@ if ingredients:
 
     df_transposed = transpose_and_rename(df_similar_recipes)
     st.write("")
-    st.write("¡Quizás estas recetas te gusten 👀!")
+    st.write("¡Quizás estas recetas te gusten :eyes:!")
     for column in df_transposed.columns:
         st.dataframe(df_transposed[column], use_container_width=True)
