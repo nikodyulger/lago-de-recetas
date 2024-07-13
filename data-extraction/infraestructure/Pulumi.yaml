@@ -2,7 +2,7 @@ name: lago-de-recetas
 runtime:
   name: python
   options:
-    virtualenv: ../.venv
+    virtualenv: ../../.venv
 description: ETL para recetas de cocina
 config:
   pulumi:tags:

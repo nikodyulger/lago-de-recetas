@@ -59,6 +59,18 @@ policy_statements = {
                 "arn:aws:s3:::raw-recipe-data-bucket/*",
             ],
         },
+        {
+            "Effect": "Allow",
+            "Action": ["scheduler:UpdateSchedule", "iam:PassRole"],
+            "Resource": [
+                f"arn:aws:scheduler:{AWS_REGION}:{AWS_ACCOUNT_ID}:schedule/default/schedule_rule_*"
+            ],
+        },
+        {
+            "Effect": "Allow",
+            "Action": ["iam:PassRole"],
+            "Resource": "*",
+        },
     ],
 }
 
@@ -87,4 +99,5 @@ for subdir in scripts_subdirectories:
             layers=[scraping_layer.arn, pandas_layer_arn],
             code=pulumi.FileArchive(subdir),
             handler=f"{script}.lambda_handler",
+            environment={"variables": {"AWS_ACCOUNT_ID": AWS_ACCOUNT_ID}},
         )

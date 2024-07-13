@@ -1,9 +1,13 @@
 import json
 import boto3
+import os
+
+AWS_ACCOUNT_ID = os.getenv("AWS_ACCOUNT_ID")
+AWS_REGION = os.getenv("AWS_REGION")
 
 ssm_client = boto3.client("ssm")
 stepfunctions_client = boto3.client("stepfunctions")
-eventbridge_client = boto3.client("events")
+scheduler_client = boto3.client("scheduler")
 
 
 def lambda_handler(event, context):
@@ -17,18 +21,14 @@ def lambda_handler(event, context):
 
     init_data = json.loads(
         response["Parameter"]["Value"]
-    )  # list of dicts { "category": "..", "pages": []}
+    )  # dict with a list property { "pages": [...]}
     print(init_data)
 
     # Check if the list is not empty
-    if len(init_data) > 0:
+    if len(init_data["pages"]) > 0:
 
-        category = init_data[0]["category"]
-        pages = init_data[0]["pages"][:page_slice]
-        del init_data[0]["pages"][:page_slice]
-
-        if len(init_data[0]["pages"]) == 0:
-            init_data = init_data[1:]
+        pages = init_data["pages"][:page_slice]
+        del init_data["pages"][:page_slice]
 
         print(f"Updated {init_param_name}")
         print(json.dumps(init_data, indent=4))
@@ -39,7 +39,17 @@ def lambda_handler(event, context):
         )
     else:
         # disable the eventbridge rule
-        eventbridge_client.disable_rule(Name=eb_rule_name)
+        scheduler_client.update_schedule(
+            Name=eb_rule_name,
+            State="DISABLED",
+            FlexibleTimeWindow={"Mode": "OFF"},
+            ScheduleExpression="rate(15 minutes)",
+            Target={
+                "Arn": f"arn:aws:lambda:{AWS_REGION}:{AWS_ACCOUNT_ID}:function:saber_vivir_init",
+                "RoleArn": f"arn:aws:iam::{AWS_ACCOUNT_ID}:role/event_rule_role",
+            },
+        )
+        pages = None
         print(f"Rule '{eb_rule_name}' has been disabled successfully.")
 
-    return {"category": category, "pages": pages}
+    return {"pages": pages}
